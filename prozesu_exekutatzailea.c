@@ -13,9 +13,11 @@ void *prozesu_exekutatzailea(void *tidv) {
     tid_ep = *((int*)tidv);
     pthread_mutex_lock(&mutex_ep);
     while (1) {
-        if (proccess.state == STATE_READY && (last_p[proccess.level] != first_p[proccess.level] || proccess_queue[proccess.level][first_p[level]].state == STATE_UNDEFINED)) {
+        pthread_cond_wait(&cond_ep, &mutex_ep);
+        if (proccess.state == STATE_BLOCKED && (last_p[proccess.level] != first_p[proccess.level] || proccess_queue[proccess.level][first_p[level]].state == STATE_UNDEFINED)) {
             pthread_mutex_lock(&mutex_proccess_queue);
             if (last_p[proccess.level] != first_p[proccess.level] || proccess_queue[proccess.level][first_p[level]].state == STATE_UNDEFINED) {
+                proccess.state = STATE_READY;
                 proccess_queue[proccess.level][last_p[proccess.level]] = proccess;
                 last_p[proccess.level] = (last_p[proccess.level]+1)%PROC_KOP_MAX;
                 pthread_mutex_unlock(&mutex_proccess_queue);
@@ -33,16 +35,17 @@ void *prozesu_exekutatzailea(void *tidv) {
                 }
             }
             else
-              pthread_mutex_unlock(&mutex_proccess_queue);
+                pthread_mutex_unlock(&mutex_proccess_queue);
+            continue;
             
         }
-        if (proccess.state == STATE_READY)
+        if (proccess.state == STATE_BLOCKED)
             continue;
-        pthread_cond_wait(&cond_ep, &mutex_ep);
         pthread_mutex_lock(&mutex_executing[tid_ep]);
         if (proccess.id != executing[tid_ep].id) {
             if (proccess.state == STATE_EXECUTION) {
-                proccess.state = STATE_READY;
+                pthread_mutex_unlock(&mutex_executing[tid_ep]);
+                proccess.state = STATE_BLOCKED;
                 if (proccess.level < PRIORITY_LEVELS-1) {
                     proccess.level = proccess.level+1;
                     proccess.quantum = pow(2, proccess.level);
@@ -68,7 +71,7 @@ void *prozesu_exekutatzailea(void *tidv) {
                 pthread_mutex_unlock(&mutex_executing[tid_ep]);
             }
             else if (exec_time == proccess.quantum) {
-                proccess.state = STATE_READY;
+                proccess.state = STATE_BLOCKED;
                 if (proccess.level < PRIORITY_LEVELS-1) {
                     proccess.level = proccess.level+1;
                     proccess.quantum = pow(2, proccess.level);

@@ -20,6 +20,8 @@
 #define MAX_CORE_QUANT   8  //core kopuru maximoa cpu-ko
 #define MAX_THREAD_QUANT 16 //hari kopuru maximoa core-ko
 
+#define MAX_WAITING_TIME 5 //Exekuzioan zeuden prozesuek gehienez itxaron dezaketen denbora prozesu ilarara berriz sartzeko
+
 #define KNRM  "\x1B[0m"
 #define KRED  "\x1B[31m"
 #define KGRN  "\x1B[32m"

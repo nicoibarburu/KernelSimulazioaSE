@@ -41,7 +41,8 @@ void next_free_ocup_cct(int nextcct[3], bool next_free) {
 
 int main(int argc, char *argv[]) {
     if (argc != 8) {
-        printf("%sErabilera: %s erlojuaren_maiztasuna(Hz) zenbat_segunduro_prozesua_sortu zenbat_segunduro_schedulerra_aktibatu CPU_kant CPU-ko_core_kant core-ko_hari_kant schedule(RORO edo DPDQ)\n", KNRM, argv[0]);
+        printf("%sErabilera: %s erlojuaren_maiztasuna(Hz) zenbat_segunduro_prozesua_sortu zenbat_segunduro_schedulerra_aktibatu\
+         CPU_kant CPU-ko_core_kant core-ko_hari_kant schedule(Round Robin: %c edo Lehentasunekin: %c)\n", KNRM, argv[0], SCHEDULER_POLITIC_RORO, SCHEDULER_POLITIC_LDDQ);
         exit(1);
     }
     if (sscanf(argv[1], "%i", &frequence) != 1 || frequence < 1) {

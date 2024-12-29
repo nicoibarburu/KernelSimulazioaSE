@@ -12,7 +12,6 @@ void *scheduler_dispatcher() {
     while(1) {
         pthread_cond_wait(&cond_sd, &mutex_sd);
         printf("%sSecheduler-a aktibatuta.\n", KYEL);
-        //if (scheduler_politic == SCHEDULER_POLITIC_RORO) {
         if (scheduler_politic == SCHEDULER_POLITIC_RORO) {
             level = 0;
             if (proccess_queue[level][first_p[level]].state == STATE_READY) {
@@ -40,7 +39,6 @@ void *scheduler_dispatcher() {
             else
                 printf("%sEz dago martxan jartzeko prozesurik.\n", KYEL);
         } // scheduler_politic == SCHEDULER_POLITIC_RORO bukaera
-        //else if (scheduler_politic == SCHEDULER_POLITIC_DPDQ) {
         if (scheduler_politic == SCHEDULER_POLITIC_LDDQ) {
             for (level=0; level<PRIORITY_LEVELS; level++) {
                 if (proccess_queue[level][first_p[level]].state == STATE_READY)
@@ -54,16 +52,14 @@ void *scheduler_dispatcher() {
                     }
                 }
                 if (next_t_exec == -1) {
-                    out_level = PRIORITY_LEVELS;
-                    out_exec_time = 0;
+                    out_level = level;
+                    out_exec_time = proccess_queue[level][first_p[level]].time_executed;
                     for (i=0; i<cpus.cpu_quant*cpus.core_quant*cpus.thread_quant-4; i++) {
                         pthread_mutex_lock(&mutex_executing[i]);
-                        if (executing[i].level < out_level && executing[i].level >= proccess_queue[level][first_p[level]].level) {
-                            if (executing[i].time_executed > out_exec_time && executing[i].time_executed > proccess_queue[level][first_p[level]].time_executed) {
-                                out_level = executing[i].level;
-                                out_exec_time = executing[i].time_executed;
-                                next_t_exec = i;
-                            }
+                        if (executing[i].level >= out_level && executing[i].time_executed > out_exec_time) {
+                            out_level = executing[i].level;
+                            out_exec_time = executing[i].time_executed;
+                            next_t_exec = i;
                         }
                         pthread_mutex_unlock(&mutex_executing[i]);
                     }
