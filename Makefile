@@ -1,2 +1,2 @@
-2atala: kernel.c
+kernel: kernel.c
 	gcc kernel.c -o kernel
