@@ -8,36 +8,44 @@
 #include "kernel.h"
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER, mutex_ps = PTHREAD_MUTEX_INITIALIZER, mutex_sd = PTHREAD_MUTEX_INITIALIZER,
-    mutex_ep = PTHREAD_MUTEX_INITIALIZER, mutex_proccess_queue = PTHREAD_MUTEX_INITIALIZER, *mutex_executing;
+    mutex_ep = PTHREAD_MUTEX_INITIALIZER, mutex_proccess_queue = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond, cond2, cond_ps, cond_sd, cond_ep;
-PCB proccess_queue[PRIORITY_LEVELS][PROC_KOP_MAX], *executing, null_proccess;
+PCB proccess_queue[PRIORITY_LEVELS][PROC_KOP_MAX], null_proccess;
 CPU cpus;
-unsigned long next_p_id;
+thread null_thread;
+unsigned long next_p_id, erlojua_tid, tenporizadorea_tid, prozesu_sortzailea_tid, scheduler_dispatcher_tid, prozesu_exekutatzailea_tid;
 unsigned int first_p[PRIORITY_LEVELS], last_p[PRIORITY_LEVELS], done, timer_ps, timer_sd, frequence;
 char scheduler_politic;
 
-void next_free_ocup_cct(int nextcct[3], bool next_free) {
-    int i, j, k;
-    for (i=0; i<3; i++) {
-        nextcct[i] = -1;
-    }
-    for (i=0; i<cpus.cpu_quant; i++)
-    for (j=0; j<cpus.core_quant; j++)
-    for (k=0; k<cpus.thread_quant; k++) {
-        if (next_free && cpus.cct[i][j][k].free) {
-            nextcct[0] = i;
-            nextcct[1] = j;
-            nextcct[2] = k;
-            break;
+void next_free_ocup_cct(int cct[3], bool free) {
+    int i, j, k, nextcct[3] = {-1, -1, -1};
+    for (i=0; i<cpus.cpu_quant; i++) {
+        for (j=0; j<cpus.core_quant; j++) {
+            for (k=0; k<cpus.thread_quant; k++) {
+                if (free && cpus.cct[i][j][k].free && (k > cct[2] || j > cct[1] || i > cct[0])) {
+                    nextcct[0] = i;
+                    nextcct[1] = j;
+                    nextcct[2] = k;
+                    break;
+                }
+                else if (!free && !cpus.cct[i][j][k].free && (k > cct[2] || j > cct[1] || i > cct[0])) {
+                    nextcct[0] = i;
+                    nextcct[1] = j;
+                    nextcct[2] = k;
+                    break;
+                }
+            }
+            if (nextcct[0] != -1)
+                break;
         }
-        else if (!next_free && !cpus.cct[i][j][k].free) {
-            nextcct[0] = i;
-            nextcct[1] = j;
-            nextcct[2] = k;
-            break;
-        }
+        if (nextcct[0] != -1)
+                break;
     }
+    cct[0] = nextcct[0];
+    cct[1] = nextcct[1];
+    cct[2] = nextcct[2];
 }
+
 
 int main(int argc, char *argv[]) {
     if (argc != 8) {
@@ -80,7 +88,7 @@ int main(int argc, char *argv[]) {
         exit(3);
     }
 
-    int i, j, k, nextcct[3];
+    int i, j, k;
     int tenp_kop = 1;
     null_proccess.id = 0;
     null_proccess.execution_time_needed = 0;
@@ -88,82 +96,69 @@ int main(int argc, char *argv[]) {
     null_proccess.quantum = 0;
     null_proccess.level = PRIORITY_LEVELS-1;
     null_proccess.state = STATE_UNDEFINED;
+    null_thread.tid = 0;
     next_p_id = 1;
     for (i=0; i<cpus.cpu_quant; i++)
     for (j=0; j<cpus.core_quant; j++)
-    for (k=0; k<cpus.thread_quant; k++)
+    for (k=0; k<cpus.thread_quant; k++) {
+        cpus.cct[i][j][k].tid = i*cpus.core_quant*cpus.thread_quant+j*cpus.thread_quant+k+1;
+        pthread_mutex_init(&cpus.cct[i][j][k].mutex_e, NULL);
+        cpus.cct[i][j][k].executing = null_proccess;
         cpus.cct[i][j][k].free = true;
+    }
     for (i=0; i<PRIORITY_LEVELS; i++) {
         first_p[i] = 0;
         last_p[i] = 0;
         for (j=0; j<PROC_KOP_MAX; j++)
             proccess_queue[i][j] = null_proccess;
     }
-    executing = (PCB*)malloc((cpus.cpu_quant*cpus.core_quant*cpus.thread_quant-4)*sizeof(PCB));
-    mutex_executing = (pthread_mutex_t*)malloc((cpus.cpu_quant*cpus.core_quant*cpus.thread_quant-4)*sizeof(pthread_mutex_t));
-    for (i=0; i<cpus.cpu_quant*cpus.core_quant*cpus.thread_quant-4; i++) {
-        executing[i] = null_proccess;
-        pthread_mutex_init(&mutex_executing[i], NULL);
-    }
     
-    next_free_ocup_cct(nextcct, true);
-    if (pthread_create(&cpus.cct[nextcct[0]][nextcct[1]][nextcct[2]].tid, NULL, prozesu_sortzailea, NULL) != 0) {
+    if (pthread_create(&prozesu_sortzailea_tid, NULL, prozesu_sortzailea, NULL) != 0) {
         printf("%sErrorea prozesu sortzailea martxan jartzean.\n", KNRM);
         exit(4);
     }
-    cpus.cct[nextcct[0]][nextcct[1]][nextcct[2]].free = false;
     printf("%sProzesu sortzailea martxan jarri da.\n", KNRM);
 
-    next_free_ocup_cct(nextcct, true);
-    if (pthread_create(&cpus.cct[nextcct[0]][nextcct[1]][nextcct[2]].tid, NULL, scheduler_dispatcher, NULL) != 0) {
+    if (pthread_create(&scheduler_dispatcher_tid, NULL, scheduler_dispatcher, NULL) != 0) {
         printf("%sErrorea scheduler-a martxan jartzean.\n", KNRM);
         exit(4);
     }
-    cpus.cct[nextcct[0]][nextcct[1]][nextcct[2]].free = false;
     printf("%sScheduler-a martxan jarri da.\n", KNRM);
 
-    next_free_ocup_cct(nextcct, true);
-    if (pthread_create(&cpus.cct[nextcct[0]][nextcct[1]][nextcct[2]].tid, NULL, erlojua, &tenp_kop) != 0) {
+    if (pthread_create(&erlojua_tid, NULL, erlojua, &tenp_kop) != 0) {
         printf("%sErrorea erlojua martxan jartzean.\n", KNRM);
         exit(4);
     }
-    cpus.cct[nextcct[0]][nextcct[1]][nextcct[2]].free = false;
     printf("%sErlojua martxan jarri da.\n", KNRM);
 
-    next_free_ocup_cct(nextcct, true);
-    if (pthread_create(&cpus.cct[nextcct[0]][nextcct[1]][nextcct[2]].tid, NULL, tenporizadorea, NULL) != 0) {
+    if (pthread_create(&tenporizadorea_tid, NULL, tenporizadorea, NULL) != 0) {
         printf("%sErrorea tenporizadorea martxan jartzean.\n", KNRM);
         exit(4);
     }
-    cpus.cct[nextcct[0]][nextcct[1]][nextcct[2]].free = false;
     printf("%sTenporizadorea martxan jarri da.\n", KNRM);
 
-    for (i=0; i<cpus.cpu_quant*cpus.core_quant*cpus.thread_quant-4; i++) {
-        int *tid = (int*)malloc(sizeof(int));
-        *tid = i;
-        next_free_ocup_cct(nextcct, true);
-        if (pthread_create(&cpus.cct[nextcct[0]][nextcct[1]][nextcct[2]].tid, NULL, prozesu_exekutatzailea, tid) != 0) {
-            printf("%sErrorea prozesu exekutadoreak martxan jartzean.\n", KNRM);
-            exit(4);
-        }
-        cpus.cct[nextcct[0]][nextcct[1]][nextcct[2]].free = false;
-        printf("%sProzesu exekutatzailea %d martxan jartzen...\n", KNRM, i);
+    if (pthread_create(&prozesu_exekutatzailea_tid, NULL, prozesu_exekutatzailea, NULL) != 0) {
+        printf("%sErrorea prozesu exekutadoreak martxan jartzean.\n", KNRM);
+        exit(4);
     }
+    printf("%sProzesu exekutatzailea martxan jarri da.\n", KNRM);
 
-    for (i=0; i<cpus.cpu_quant*cpus.core_quant*cpus.thread_quant; i++) {
-        next_free_ocup_cct(nextcct, false);
-        pthread_join(cpus.cct[nextcct[0]][nextcct[1]][nextcct[2]].tid, NULL);
-    }
+    pthread_join(erlojua_tid, NULL);
+    pthread_join(tenporizadorea_tid, NULL);
+    pthread_join(prozesu_sortzailea_tid, NULL);
+    pthread_join(scheduler_dispatcher_tid, NULL);
+    pthread_join(prozesu_exekutatzailea_tid, NULL);
 
-    free(executing);
-    free(mutex_executing);
     pthread_mutex_destroy(&mutex);
     pthread_mutex_destroy(&mutex_ps);
     pthread_mutex_destroy(&mutex_sd);
     pthread_mutex_destroy(&mutex_ep);
     pthread_mutex_destroy(&mutex_proccess_queue);
-    for (i=0; i<cpus.cpu_quant*cpus.core_quant*cpus.thread_quant-4; i++)
-        pthread_mutex_destroy(&mutex_executing[i]);
+    for (i=0; i<cpus.cpu_quant; i++)
+    for (j=0; j<cpus.core_quant; j++)
+    for (k=0; k<cpus.thread_quant; k++) {
+        pthread_mutex_destroy(&cpus.cct[i][j][k].mutex_e);
+    }
     pthread_cond_destroy(&cond);
     pthread_cond_destroy(&cond2);
     pthread_cond_destroy(&cond_ps);

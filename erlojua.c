@@ -2,8 +2,8 @@
 #include <unistd.h>
 #include "kernel.h"
 
-void *erlojua(void *ten_kop) {
-    int tenp_kop = *((int*)ten_kop);
+void *erlojua(void *tenp_k) {
+    int tenp_kop = *(int *)tenp_k;
     done = 0;
     while(1){
         pthread_mutex_lock(&mutex);

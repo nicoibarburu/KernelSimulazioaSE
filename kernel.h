@@ -22,6 +22,9 @@
 
 #define MAX_WAITING_TIME 5 //Exekuzioan zeuden prozesuek gehienez itxaron dezaketen denbora prozesu ilarara berriz sartzeko
 
+#define WORD_SIZE   4           //Memoria fisikoko hitz bakoitzaren tamaina
+#define WORD_QUANT  16777216    //2^24 hitz daude memorian
+
 #define KNRM  "\x1B[0m"
 #define KRED  "\x1B[31m"
 #define KGRN  "\x1B[32m"
@@ -39,6 +42,9 @@ typedef struct {
 
 typedef struct {
     pthread_t tid;
+    pthread_mutex_t mutex_e;
+    PCB executing;
+    unsigned int exec_time;
     bool free;
 } thread;
 
@@ -47,19 +53,29 @@ typedef struct {
     unsigned short cpu_quant, core_quant, thread_quant;
 } CPU;
 
+typedef struct {
+    char word[WORD_SIZE];
+} word;
+
+typedef struct {
+    word memory[WORD_QUANT];
+} physical_memory;
+
 extern pthread_mutex_t mutex, mutex_ps, mutex_sd,
-    mutex_ep, mutex_proccess_queue, *mutex_executing;
+    mutex_ep, mutex_proccess_queue;
 extern pthread_cond_t cond, cond2, cond_ps, cond_sd, cond_ep;
-extern PCB proccess_queue[PRIORITY_LEVELS][PROC_KOP_MAX], *executing, null_proccess;
+extern PCB proccess_queue[PRIORITY_LEVELS][PROC_KOP_MAX], null_proccess;
 extern CPU cpus;
-extern unsigned long next_p_id;
+extern thread null_thread;
+extern unsigned long next_p_id, erlojua_tid, tenporizadorea_tid, prozesu_sortzailea_tid, scheduler_dispatcher_tid, prozesu_exekutatzailea_tid;
 extern unsigned int first_p[PRIORITY_LEVELS], last_p[PRIORITY_LEVELS], done, timer_ps, timer_sd, frequence;
 extern char scheduler_politic;
 
-extern void *erlojua(void *ten_kop);
+extern void *erlojua(void *tenp_kop);
 extern void *tenporizadorea();
 extern void *prozesu_sortzailea();
 extern void *scheduler_dispatcher();
-extern void *prozesu_exekutatzailea(void *tidv);
+extern void *prozesu_exekutatzailea();
+extern void next_free_ocup_cct(int cct[3], bool free);
 
 #endif

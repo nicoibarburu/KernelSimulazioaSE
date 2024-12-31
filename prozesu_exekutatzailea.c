@@ -3,85 +3,41 @@
 #include <string.h>
 #include <stdbool.h>
 #include <pthread.h>
-#include <math.h>
 #include "kernel.h"
 
-void *prozesu_exekutatzailea(void *tidv) {
-    PCB proccess = null_proccess;
-    int i, level, tid_ep;
-    double exec_time;
-    tid_ep = *((int*)tidv);
+void *prozesu_exekutatzailea() {
+    thread *now_thread;
+    int i, j, k, l, level;
     pthread_mutex_lock(&mutex_ep);
     while (1) {
         pthread_cond_wait(&cond_ep, &mutex_ep);
-        if (proccess.state == STATE_BLOCKED && (last_p[proccess.level] != first_p[proccess.level] || proccess_queue[proccess.level][first_p[level]].state == STATE_UNDEFINED)) {
-            pthread_mutex_lock(&mutex_proccess_queue);
-            if (last_p[proccess.level] != first_p[proccess.level] || proccess_queue[proccess.level][first_p[level]].state == STATE_UNDEFINED) {
-                proccess.state = STATE_READY;
-                proccess_queue[proccess.level][last_p[proccess.level]] = proccess;
-                last_p[proccess.level] = (last_p[proccess.level]+1)%PROC_KOP_MAX;
-                pthread_mutex_unlock(&mutex_proccess_queue);
-                pthread_mutex_lock(&mutex_executing[tid_ep]);
-                if (proccess.id != executing[tid_ep].id) {
-                    proccess = executing[tid_ep];
-                    pthread_mutex_unlock(&mutex_executing[tid_ep]);
-                    exec_time = 0;
-                    printf("%s%lu prozesua exekutatzen hasita...\n", KRED, proccess.id);
+        for (i=0; i<cpus.cpu_quant; i++)
+        for (j=0; j<cpus.core_quant; j++)
+        for (k=0; k<cpus.thread_quant; k++) {
+            now_thread = &cpus.cct[i][j][k];
+            pthread_mutex_lock(&now_thread->mutex_e);
+            if (now_thread->executing.state == STATE_EXECUTION) {
+                now_thread->exec_time++;
+                now_thread->executing.time_executed++;
+                if (now_thread->exec_time-1 == 0)
+                    printf("%s%lu haria %lu prozesua exekutatzen hasi da...\n", KRED, now_thread->tid, now_thread->executing.id);
+                else if (now_thread->executing.time_executed == now_thread->executing.execution_time_needed) {
+                    now_thread->executing.state = STATE_FINISHED;
+                    printf("%s%lu hariak %lu prozesua exekutatzen amaitu du.\n", KRED, now_thread->tid, now_thread->executing.id);
+                    now_thread->executing = null_proccess;
+                    now_thread->free = true;
                 }
-                else {
-                    executing[tid_ep] = null_proccess;
-                    pthread_mutex_unlock(&mutex_executing[tid_ep]);
-                    proccess = null_proccess;
+                else if (now_thread->exec_time == now_thread->executing.quantum) {
+                    now_thread->executing.state = STATE_BLOCKED;
+                    printf("%s%lu harian %lu prozesuaren quantum-a agortu da.\n", KRED, now_thread->tid, now_thread->executing.id);
                 }
-            }
-            else
-                pthread_mutex_unlock(&mutex_proccess_queue);
-            continue;
-            
-        }
-        if (proccess.state == STATE_BLOCKED)
-            continue;
-        pthread_mutex_lock(&mutex_executing[tid_ep]);
-        if (proccess.id != executing[tid_ep].id) {
-            if (proccess.state == STATE_EXECUTION) {
-                pthread_mutex_unlock(&mutex_executing[tid_ep]);
-                proccess.state = STATE_BLOCKED;
-                if (proccess.level < PRIORITY_LEVELS-1) {
-                    proccess.level = proccess.level+1;
-                    proccess.quantum = pow(2, proccess.level);
-                }
+                else
+                    printf("%s%lu haria %lu prozesua exekutatzen...\n", KRED, now_thread->tid, now_thread->executing.id);
             }
             else {
-                proccess = executing[tid_ep];
-                pthread_mutex_unlock(&mutex_executing[tid_ep]);
-                exec_time = 0;
-                printf("%s%lu prozesua exekutatzen hasita...\n", KRED, proccess.id);
+                printf("%s%lu harian ez dago exekutatzeko prozesurik.\n", KRED, now_thread->tid);
             }
-        }   
-        else if (proccess.id != null_proccess.id) {
-            pthread_mutex_unlock(&mutex_executing[tid_ep]);
-            exec_time++;
-            proccess.time_executed++;
-            if (proccess.time_executed == proccess.execution_time_needed) {
-                proccess.state = STATE_FINISHED;
-                printf("%s%lu prozesua amaitu da.\n", KRED, proccess.id);
-                proccess = null_proccess;
-                pthread_mutex_lock(&mutex_executing[tid_ep]);
-                executing[tid_ep] = null_proccess;
-                pthread_mutex_unlock(&mutex_executing[tid_ep]);
-            }
-            else if (exec_time == proccess.quantum) {
-                proccess.state = STATE_BLOCKED;
-                if (proccess.level < PRIORITY_LEVELS-1) {
-                    proccess.level = proccess.level+1;
-                    proccess.quantum = pow(2, proccess.level);
-                }
-                printf("%s%lu prozesuaren quantum-a agortu da.\n", KRED, proccess.id);
-            }
-            else
-                printf("%s%lu prozesua exekutatzen...\n", KRED, proccess.id);
+            pthread_mutex_unlock(&now_thread->mutex_e);
         }
-        else
-            pthread_mutex_unlock(&mutex_executing[tid_ep]);
     }
 }
