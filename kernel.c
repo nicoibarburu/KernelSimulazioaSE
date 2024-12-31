@@ -16,6 +16,7 @@ thread null_thread;
 unsigned long next_p_id, erlojua_tid, tenporizadorea_tid, prozesu_sortzailea_tid, scheduler_dispatcher_tid, prozesu_exekutatzailea_tid;
 unsigned int first_p[PRIORITY_LEVELS], last_p[PRIORITY_LEVELS], done, timer_ps, timer_sd, frequence;
 char scheduler_politic;
+bool finish;
 
 void next_free_ocup_cct(int cct[3], bool free) {
     int i, j, k, nextcct[3] = {-1, -1, -1};
@@ -48,6 +49,7 @@ void next_free_ocup_cct(int cct[3], bool free) {
 
 
 int main(int argc, char *argv[]) {
+    printf("%sPrograma exekutatzen bukatzeko F karakterea idatzi.\n", KNRM);
     if (argc != 8) {
         printf("%sErabilera: %s erlojuaren_maiztasuna(Hz) zenbat_segunduro_prozesua_sortu zenbat_segunduro_schedulerra_aktibatu\
          CPU_kant CPU-ko_core_kant core-ko_hari_kant schedule(Round Robin: %c edo Lehentasunekin: %c)\n", KNRM, argv[0], SCHEDULER_POLITIC_RORO, SCHEDULER_POLITIC_LDDQ);
@@ -83,13 +85,10 @@ int main(int argc, char *argv[]) {
     }
     scheduler_politic = *argv[7];
 
-    if (cpus.cpu_quant*cpus.core_quant*cpus.thread_quant<5) {
-        printf("%sEzin dira oinarrizko hariak sortu. Hari gehiago behar dira.\n", KNRM);
-        exit(3);
-    }
-
     int i, j, k;
+    char fin;
     int tenp_kop = 1;
+    finish = false;
     null_proccess.id = 0;
     null_proccess.execution_time_needed = 0;
     null_proccess.time_executed = 0;
@@ -143,12 +142,37 @@ int main(int argc, char *argv[]) {
     }
     printf("%sProzesu exekutatzailea martxan jarri da.\n", KNRM);
 
+    while (!finish) {
+        scanf("%c", &fin);
+        if (fin == 'f' || fin == 'F')
+            finish = true;
+        else
+            printf("%sBukatzeko F karakterea idatzi.\n", KNRM);
+    }
+
+    usleep(2*1e6);
+
+    printf("%sPrograma itzaltzen...\n", KNRM);
+    for (i=0; i<tenp_kop; i++)
+        pthread_cond_signal(&cond);
+    usleep(2*1e6);
+    pthread_cond_signal(&cond2);
+    pthread_cond_signal(&cond_ep);
+    pthread_cond_signal(&cond_ps);
+    pthread_cond_signal(&cond_sd);
+
+    printf("%sErlojua itzaltzen...\n", KNRM);
     pthread_join(erlojua_tid, NULL);
+    printf("%sTenporizadorea itzaltzen...\n", KNRM);
     pthread_join(tenporizadorea_tid, NULL);
+    printf("%sProzesu sortzailea itzaltzen...\n", KNRM);
     pthread_join(prozesu_sortzailea_tid, NULL);
+    printf("%sScheduler-dispatcher-a itzaltzen...\n", KNRM);
     pthread_join(scheduler_dispatcher_tid, NULL);
+    printf("%sProzesu exekutatzailea itzaltzen...\n", KNRM);
     pthread_join(prozesu_exekutatzailea_tid, NULL);
 
+    printf("%sMutex eta baldintzak ezabatzen...\n", KNRM);
     pthread_mutex_destroy(&mutex);
     pthread_mutex_destroy(&mutex_ps);
     pthread_mutex_destroy(&mutex_sd);

@@ -5,18 +5,17 @@
 #include <math.h>
 #include "kernel.h"
 
-void *prozesu_sortzailea(void *this) {
-    //int *this_t = (int*)this;
-    //thread this_thread = cpus.cct[this_t[0]][this_t[1]][this_t[2]];
+void *prozesu_sortzailea() {
     int level;
     pthread_mutex_lock(&mutex_ps);
     while(1) {
         pthread_cond_wait(&cond_ps, &mutex_ps);
+        if (finish)
+            break;
         if (scheduler_politic == SCHEDULER_POLITIC_RORO)
             level = 0;
-        else
+        else if (scheduler_politic == SCHEDULER_POLITIC_LDDQ)
             level = (rand()%PRIORITY_LEVELS);
-        
         pthread_mutex_lock(&mutex_proccess_queue);
         if (last_p[level] != first_p[level] || proccess_queue[level][first_p[level]].state == STATE_UNDEFINED) {
             proccess_queue[level][last_p[level]].id = next_p_id;
@@ -35,5 +34,6 @@ void *prozesu_sortzailea(void *this) {
         else
             printf("%sProzesu kopuru maximoa prozesuaren mailan. Ezin da prozesurik sortu.\n", KCYN);
         pthread_mutex_unlock(&mutex_proccess_queue);
-    }
+    } // while (1) bukaera
+    return 0;
 }

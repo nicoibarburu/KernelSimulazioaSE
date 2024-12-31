@@ -70,6 +70,7 @@ extern thread null_thread;
 extern unsigned long next_p_id, erlojua_tid, tenporizadorea_tid, prozesu_sortzailea_tid, scheduler_dispatcher_tid, prozesu_exekutatzailea_tid;
 extern unsigned int first_p[PRIORITY_LEVELS], last_p[PRIORITY_LEVELS], done, timer_ps, timer_sd, frequence;
 extern char scheduler_politic;
+extern bool finish;
 
 extern void *erlojua(void *tenp_kop);
 extern void *tenporizadorea();

@@ -13,5 +13,8 @@ void *erlojua(void *tenp_k) {
         done = 0;
         pthread_cond_broadcast(&cond2);
         pthread_mutex_unlock(&mutex);
+        if (finish)
+            break;
     }
+    return 0;
 }

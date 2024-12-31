@@ -13,6 +13,8 @@ void *scheduler_dispatcher() {
     pthread_mutex_lock(&mutex_sd);
     while(1) {
         pthread_cond_wait(&cond_sd, &mutex_sd);
+        if (finish)
+            break;
         printf("%sSecheduler-a eta dispatcher-a aktibatuta.\n", KYEL);
         printf("%sBlokeatutako prozesuak prozesu ilarara sartzen...\n", KYEL);
         cct[0] = 0;
@@ -53,9 +55,9 @@ void *scheduler_dispatcher() {
                     next_t_exec->exec_time = 0;
                     pthread_mutex_unlock(&next_t_exec->mutex_e);
                 }
-            }
+            } // state == state_blocked bukaera
             next_free_ocup_cct(cct, false);
-        }
+        } // while (cct[0] != -1) bukaera
         cct[0] = 0;
         cct[1] = 0;
         cct[2] = -1;
@@ -81,10 +83,10 @@ void *scheduler_dispatcher() {
                 }
                 else
                     printf("%sHari guztiak okupatuta daude\n", KYEL);
-            }
+            } // state == state_ready bukaera
             else
                 printf("%sEz dago martxan jartzeko prozesurik.\n", KYEL);
-        } // scheduler_politic == SCHEDULER_POLITIC_RORO bukaera
+        } // scheduler_politic == RORO bukaera
         else if (scheduler_politic == SCHEDULER_POLITIC_LDDQ) {
             for (level=0; level<PRIORITY_LEVELS; level++) {
                 if (proccess_queue[level][first_p[level]].state == STATE_READY)
@@ -136,8 +138,8 @@ void *scheduler_dispatcher() {
                             pthread_mutex_unlock(&next_t_exec->mutex_e);
                             next_t_exec = &null_thread;
                         }
-                    }
-                }
+                    } // next_t_exec->tid != 0 bukaera
+                } // cct[0] == -1 bukaera
                 else
                     next_t_exec = &cpus.cct[cct[0]][cct[1]][cct[2]];
                 if (next_t_exec->tid != 0) {
@@ -152,13 +154,14 @@ void *scheduler_dispatcher() {
                     proccess_queue[level][first_p[level]] = null_proccess;
                     first_p[level] = (first_p[level]+1)%PROC_KOP_MAX;
                     pthread_mutex_unlock(&mutex_proccess_queue);
-                }
+                } // next_t_exec->tid != 0 bukaera
                 else
                     printf("%sHari guztiak ataza garrantzitsuagoekin okupatuta daude.\n", KYEL);
-            } // exekutatzeko prest dagoen prozesu bat dago bukaera
+            } // state == state_ready bukaera
             else
                 printf("%sEz dago martxan jartzeko prozesurik.\n", KYEL);
-        } // scheduler_politic == SCHEDULER_POLITIC_DPDQ bukaera
+        } // scheduler_politic == LDDQ bukaera
     } // while(1) bukaera
     free(lag);
+    return 0;
 }
