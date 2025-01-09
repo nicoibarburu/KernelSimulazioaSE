@@ -49,7 +49,6 @@ void next_free_ocup_cct(int cct[3], bool free) {
 
 
 int main(int argc, char *argv[]) {
-    printf("%sPrograma exekutatzen bukatzeko F karakterea idatzi.\n", KNRM);
     if (argc != 8) {
         printf("%sErabilera: %s erlojuaren_maiztasuna(Hz) zenbat_segunduro_prozesua_sortu zenbat_segunduro_schedulerra_aktibatu\
          CPU_kant CPU-ko_core_kant core-ko_hari_kant schedule(Round Robin: %c edo Lehentasunekin: %c)\n", KNRM, argv[0], SCHEDULER_POLITIC_RORO, SCHEDULER_POLITIC_LDDQ);
@@ -143,11 +142,10 @@ int main(int argc, char *argv[]) {
     printf("%sProzesu exekutatzailea martxan jarri da.\n", KNRM);
 
     while (!finish) {
+        printf("%sPrograma exekutatzen bukatzeko F karakterea idatzi.\n", KNRM);
         scanf("%c", &fin);
         if (fin == 'f' || fin == 'F')
             finish = true;
-        else
-            printf("%sBukatzeko F karakterea idatzi.\n", KNRM);
     }
 
     usleep(2*1e6);

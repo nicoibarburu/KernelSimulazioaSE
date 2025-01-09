@@ -20,10 +20,9 @@
 #define MAX_CORE_QUANT   8  //core kopuru maximoa cpu-ko
 #define MAX_THREAD_QUANT 16 //hari kopuru maximoa core-ko
 
-#define MAX_WAITING_TIME 5 //Exekuzioan zeuden prozesuek gehienez itxaron dezaketen denbora prozesu ilarara berriz sartzeko
-
 #define WORD_SIZE   4           //Memoria fisikoko hitz bakoitzaren tamaina
 #define WORD_QUANT  16777216    //2^24 hitz daude memorian
+#define TLB_SIZE    10          //TLB sarrera kopurua
 
 #define KNRM  "\x1B[0m"
 #define KRED  "\x1B[31m"
@@ -35,16 +34,26 @@
 #define KWHT  "\x1B[37m"
 
 typedef struct {
-    unsigned long id;
+    unsigned long id, pgb, code, data;
     unsigned int execution_time_needed, time_executed, quantum, level;
     char state;
 } PCB;
 
 typedef struct {
+    unsigned long page[TLB_SIZE];
+    unsigned long frame[TLB_SIZE];
+} TLB;
+
+typedef struct {
+    TLB tlb;
+} MMU;
+typedef struct {
     pthread_t tid;
     pthread_mutex_t mutex_e;
     PCB executing;
-    unsigned int exec_time;
+    MMU mmu;
+    unsigned int exec_time, pc, ir;
+    unsigned long ptbr;
     bool free;
 } thread;
 

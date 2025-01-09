@@ -117,7 +117,7 @@ void *scheduler_dispatcher() {
                         pthread_mutex_lock(&next_t_exec->mutex_e);
                         next_t_exec->executing.state = STATE_READY;
                         if (next_t_exec->executing.level < PRIORITY_LEVELS-1) {
-                            next_t_exec->executing.level--;
+                            next_t_exec->executing.level++;
                             next_t_exec->executing.quantum = pow(2, next_t_exec->executing.level);
                         }
                         pthread_mutex_unlock(&next_t_exec->mutex_e);

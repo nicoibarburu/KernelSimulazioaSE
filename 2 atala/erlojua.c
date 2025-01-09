@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <unistd.h>
+#include <stdbool.h>
 #include "kernel.h"
 
 void *erlojua(void *tenp_k) {
