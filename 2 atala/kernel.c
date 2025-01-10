@@ -1,10 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <stdbool.h>
-#include <math.h>
 #include "kernel.h"
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER, mutex_ps = PTHREAD_MUTEX_INITIALIZER, mutex_sd = PTHREAD_MUTEX_INITIALIZER,
@@ -13,8 +6,8 @@ pthread_cond_t cond, cond2, cond_ps, cond_sd, cond_ep;
 PCB proccess_queue[PRIORITY_LEVELS][PROC_KOP_MAX], null_proccess;
 CPU cpus;
 thread null_thread;
-unsigned long next_p_id, erlojua_tid, tenporizadorea_tid, prozesu_sortzailea_tid, scheduler_dispatcher_tid, prozesu_exekutatzailea_tid;
-unsigned int first_p[PRIORITY_LEVELS], last_p[PRIORITY_LEVELS], done, timer_ps, timer_sd, frequence;
+uint64_t next_p_id, erlojua_tid, tenporizadorea_tid, prozesu_sortzailea_tid, scheduler_dispatcher_tid, prozesu_exekutatzailea_tid;
+uint32_t first_p[PRIORITY_LEVELS], last_p[PRIORITY_LEVELS], done, timer_ps, timer_sd, frequence;
 char scheduler_politic;
 bool finish;
 
@@ -66,15 +59,15 @@ int main(int argc, char *argv[]) {
         printf("%sTenporizadoreak sheduler-a zenbat segunduro deituko duen zenbaki oso positiboa izan behar du (0 balioa izan ezik).\n", KNRM);
         exit(2);
     }
-    if (sscanf(argv[4], "%hu", &cpus.cpu_quant) != 1 || cpus.cpu_quant < 1 || cpus.cpu_quant > MAX_CPU_QUANT) {
+    if (sscanf(argv[4], "%hhu", &cpus.cpu_quant) != 1 || cpus.cpu_quant < 1 || cpus.cpu_quant > MAX_CPU_QUANT) {
         printf("%sCPU kantitateak 1-4 tarteko zenbaki osoa izan behar du.\n", KNRM);
         exit(2);
     }
-    if (sscanf(argv[5], "%hu", &cpus.core_quant) != 1 || cpus.core_quant < 1 || cpus.core_quant > MAX_CORE_QUANT) {
+    if (sscanf(argv[5], "%hhu", &cpus.core_quant) != 1 || cpus.core_quant < 1 || cpus.core_quant > MAX_CORE_QUANT) {
         printf("%sCPU-ko core kantitateak 1-8 tarteko zenbaki osoa izan behar du.\n", KNRM);
         exit(2);
     }
-    if (sscanf(argv[6], "%hu", &cpus.thread_quant) != 1 || cpus.thread_quant < 1 || cpus.thread_quant > MAX_THREAD_QUANT) {
+    if (sscanf(argv[6], "%hhu", &cpus.thread_quant) != 1 || cpus.thread_quant < 1 || cpus.thread_quant > MAX_THREAD_QUANT) {
         printf("%sCore-ko hari kantitateak 1-16 tarteko zenbaki osoa izan behar du.\n", KNRM);
         exit(2);
     }
@@ -89,13 +82,12 @@ int main(int argc, char *argv[]) {
     int tenp_kop = 1;
     finish = false;
     null_proccess.id = 0;
-    null_proccess.execution_time_needed = 0;
-    null_proccess.time_executed = 0;
     null_proccess.quantum = 0;
     null_proccess.level = PRIORITY_LEVELS-1;
     null_proccess.state = STATE_UNDEFINED;
     null_thread.tid = 0;
     next_p_id = 1;
+    // Hari guztiak hasieratu
     for (i=0; i<cpus.cpu_quant; i++)
     for (j=0; j<cpus.core_quant; j++)
     for (k=0; k<cpus.thread_quant; k++) {

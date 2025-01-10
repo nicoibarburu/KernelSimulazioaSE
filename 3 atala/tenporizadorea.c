@@ -1,11 +1,7 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <pthread.h>
-#include <stdlib.h>
 #include "kernel.h"
 
 void *tenporizadorea() {
-    long unsigned int tick_kont = 0, seg_kont = 0;
+    uint64_t tick_kont = 0, seg_kont = 0;
     pthread_mutex_lock(&mutex);
     while(1) {
         done++;
@@ -14,9 +10,9 @@ void *tenporizadorea() {
         if (tick_kont%frequence == 0) {
             seg_kont++;
             printf("%s%lu segundu pasa dira.\n", KGRN, seg_kont);
-            pthread_cond_signal(&cond_ep);
-            if (seg_kont%timer_ps == 0)
-                pthread_cond_signal(&cond_ps);
+            //pthread_cond_signal(&cond_ep);
+            if (seg_kont%timer_pk == 0)
+                pthread_cond_signal(&cond_pk);
             if (seg_kont%timer_sd == 0)
                 pthread_cond_signal(&cond_sd);
         }

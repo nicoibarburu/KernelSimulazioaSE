@@ -1,5 +1,11 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
 #include <pthread.h>
+#include <unistd.h>
 #include <stdbool.h>
+#include <math.h>
 
 #ifndef KERNEL_H
 #define KERNEL_H
@@ -30,8 +36,8 @@
 #define KWHT  "\x1B[37m"
 
 typedef struct {
-    unsigned long id;
-    unsigned int execution_time_needed, time_executed, quantum, level;
+    uint64_t id;
+    uint32_t execution_time_needed, time_executed, quantum, level;
     char state;
 } PCB;
 
@@ -39,13 +45,13 @@ typedef struct {
     pthread_t tid;
     pthread_mutex_t mutex_e;
     PCB executing;
-    unsigned int exec_time;
+    uint32_t exec_time;
     bool free;
 } thread;
 
 typedef struct {
-    thread cct[MAX_CPU_QUANT][MAX_CORE_QUANT][MAX_THREAD_QUANT];
-    unsigned short cpu_quant, core_quant, thread_quant;
+    thread cct[MAX_CPU_QUANT][MAX_CORE_QUANT][MAX_THREAD_QUANT]; //cct = CPU core thread
+    uint8_t cpu_quant, core_quant, thread_quant;
 } CPU;
 
 extern pthread_mutex_t mutex, mutex_ps, mutex_sd,
@@ -54,8 +60,8 @@ extern pthread_cond_t cond, cond2, cond_ps, cond_sd, cond_ep;
 extern PCB proccess_queue[PRIORITY_LEVELS][PROC_KOP_MAX], null_proccess;
 extern CPU cpus;
 extern thread null_thread;
-extern unsigned long next_p_id, erlojua_tid, tenporizadorea_tid, prozesu_sortzailea_tid, scheduler_dispatcher_tid, prozesu_exekutatzailea_tid;
-extern unsigned int first_p[PRIORITY_LEVELS], last_p[PRIORITY_LEVELS], done, timer_ps, timer_sd, frequence;
+extern uint64_t next_p_id, erlojua_tid, tenporizadorea_tid, prozesu_sortzailea_tid, scheduler_dispatcher_tid, prozesu_exekutatzailea_tid;
+extern uint32_t first_p[PRIORITY_LEVELS], last_p[PRIORITY_LEVELS], done, timer_ps, timer_sd, frequence;
 extern char scheduler_politic;
 extern bool finish;
 

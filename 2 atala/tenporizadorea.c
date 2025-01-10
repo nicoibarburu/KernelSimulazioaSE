@@ -1,11 +1,7 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <pthread.h>
-#include <stdlib.h>
 #include "kernel.h"
 
 void *tenporizadorea() {
-    long unsigned int tick_kont = 0, seg_kont = 0;
+    uint64_t tick_kont = 0, seg_kont = 0;
     pthread_mutex_lock(&mutex);
     while(1) {
         done++;
